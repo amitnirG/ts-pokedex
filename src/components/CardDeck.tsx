@@ -60,6 +60,7 @@ export default function CardDeck() {
     );
   };
 
+  //search handler
   const searchHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
@@ -67,7 +68,6 @@ export default function CardDeck() {
   useEffect(() => {
     fetchPokeData();
   }, []);
-// console.log(filteredPokemons);
 
   //responsible for the search
   useEffect(() => {

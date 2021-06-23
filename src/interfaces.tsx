@@ -18,7 +18,7 @@ export interface IpokeFullData {
   frontImage: string;
   backImage: string;
   name: string;
-  types: any[];
+  types: PokeType[];
   stats: {
     hp: number;
     attack: number;

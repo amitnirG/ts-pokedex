@@ -76,7 +76,9 @@ export default function PokeSinglePage() {
       frontImage: data.sprites.front_default,
       backImage: data.sprites.back_default,
       name: data.name,
-      types: data.types,
+      types: data.types.map((type:any):PokeType => {
+        return type.type.name;
+      }),
       stats: {
         hp: data.stats[0].base_stat,
         attack: data.stats[1].base_stat,
@@ -103,8 +105,8 @@ export default function PokeSinglePage() {
             src={pokemonData.frontImage}
           ></StyledImg>
           <div>{pokemonData.name}</div>
-          {pokemonData.types.map((type: any,index:number) => (
-            <TypeDiv key={index} type={type.type.name}>{type.type.name}</TypeDiv>
+          {pokemonData.types.map((type: PokeType,index:number) => (
+            <TypeDiv key={index} type={type}>{type}</TypeDiv>
           ))}
         </HalfCard>
         <HalfCard className="secondery-section">
