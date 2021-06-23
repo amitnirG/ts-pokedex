@@ -21,11 +21,13 @@ export default function CardDeck() {
   const [pokemons, setPokemons] = useState<IpokeFullData[]>([]);
   const [filteredPokemons, setFilteredPokemons] = useState<IpokeFullData[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [paginationOffset,setPaginationOffset] = useState<number>(0);
+ 
 
   //fetch data frop pokeApi
   const fetchPokeData = async () => {
-    const pokemonObjArr:IpokeFullData[] = []
-    const data = await getRequest(`https://pokeapi.co/api/v2/pokemon?limit=50`);
+    const pokemonObjArr:IpokeFullData[]=[] ;
+    const data = await getRequest(`https://pokeapi.co/api/v2/pokemon?limit=50&offset=${paginationOffset}`);
     await Promise.all(data.results.map(async (pokemon: any) => {
       const pokemonData: any = await getRequest(pokemon.url);
       const pokemonObj: IpokeFullData = {
@@ -45,9 +47,21 @@ export default function CardDeck() {
       };
       pokemonObjArr.push(pokemonObj)
     }));
-    setPokemons(pokemonObjArr.sort((a, b) => a.id - b.id))   //araging the pokemons by id order
+    // setPokemons(pokemonObjArr.sort((a, b) => a.id - b.id))   //araging the pokemons by id order     
+    setPokemons((prevState:IpokeFullData[]):IpokeFullData[] => {
+      return [...prevState,...pokemonObjArr].sort((a, b) => a.id - b.id)
+    })
+    // setPokemons((prevState:IpokeFullData[]):IpokeFullData[] => {
+      // @ts-ignore
+      // return [...prevState,pokemonObjArr];
+    // })   //araging the pokemons by id order
   };
 
+const loadMore = () => {
+  setPaginationOffset((prevValue:number):number => {
+    return prevValue+50;
+  })
+}
   //sets a filtered arr of pokemons by search
   const filterPokemons = () => {
     setFilteredPokemons(
@@ -67,7 +81,7 @@ export default function CardDeck() {
 
   useEffect(() => {
     fetchPokeData();
-  }, []);
+  }, [paginationOffset]);
 
   //responsible for the search
   useEffect(() => {
@@ -84,6 +98,7 @@ export default function CardDeck() {
             searchHandler(e);
           }}
         />
+   
       </div>
       <Deck className="card-deck-container">
         {filteredPokemons?.map((pokemon, index) => (
@@ -95,6 +110,7 @@ export default function CardDeck() {
           />
         ))}
       </Deck>
+      <button onClick={loadMore} style={{fontSize:"50px",margin:'20px 0 50px 45%'}}> load more</button>
     </>
   );
 }
