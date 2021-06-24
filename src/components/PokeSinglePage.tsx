@@ -53,8 +53,9 @@ const handleColorType = (pokemonType: PokeType) => {
 
 const TypeDiv = styled.span<{ type: PokeType }>`
   display: flex;
-  padding: 5px;
+  padding: 10px;
   margin: 5px;
+  color:white;
   border-radius: 10px;
   align-items: center;
   justify-content: center;
@@ -65,6 +66,10 @@ const TypeDiv = styled.span<{ type: PokeType }>`
 export default function PokeSinglePage() {
   const [pokemonData, setPokemonData] = useState<IpokeFullData | null>();
   const { id: pokemonsId } = useParams<{ id?: string }>();
+  
+  useEffect(() => {
+    fectPokemonData();
+  }, []);
 
   //fetching and arraging relavent data
   const fectPokemonData = async () => {
@@ -91,34 +96,32 @@ export default function PokeSinglePage() {
     setPokemonData(pokemonObj);
   };
 
-  useEffect(() => {
-    fectPokemonData();
-  }, []);
 
   if (pokemonData) {
     return (
       <StyledSingleCard>
         <HalfCard className="main-section">
-          <div>#{pokemonData.id}</div>
+          <p style={{alignSelf:'flex-start'}}>#{pokemonData.id}</p>
           <StyledImg
             alt="front"
             src={pokemonData.frontImage}
           ></StyledImg>
-          <div>{pokemonData.name}</div>
+          <p>{pokemonData.name}</p>
+          <div style={{display:'flex'}}>
           {pokemonData.types.map((type: PokeType,index:number) => (
             <TypeDiv key={index} type={type}>{type}</TypeDiv>
-          ))}
+            ))}
+            </div>
         </HalfCard>
         <HalfCard className="secondery-section">
           <div className="stats">
-            <ul>
-              <li key='hp'>HP: {pokemonData.stats.hp}</li>
-              <li key='att'>Attack: {pokemonData.stats.attack}</li>
-              <li key='def'>Defense: {pokemonData.stats.defense}</li>
-              <li key='Satt'>Special Attack: {pokemonData.stats.specialAttack}</li>
-              <li key='Sdef'>Special Defense: {pokemonData.stats.specialDefense}</li>
-              <li key='spd'>Speed: {pokemonData.stats.speed}</li>
-            </ul>
+            <h3>Stats</h3>
+              <p key='hp'>HP: {pokemonData.stats.hp}</p>
+              <p key='att'>Attack: {pokemonData.stats.attack}</p>
+              <p key='def'>Defense: {pokemonData.stats.defense}</p>
+              <p key='Satt'>Special Attack: {pokemonData.stats.specialAttack}</p>
+              <p key='Sdef'>Special Defense: {pokemonData.stats.specialDefense}</p>
+              <p key='spd'>Speed: {pokemonData.stats.speed}</p>  
           </div>
         </HalfCard>
       </StyledSingleCard>

@@ -11,6 +11,7 @@ export interface IpokeCard {
   name: string;
   id: number;
   image: string;
+  ref?:any;
 }
 
 export interface IpokeFullData {

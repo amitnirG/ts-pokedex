@@ -8,6 +8,7 @@ import PokeSinglePage from "./components/PokeSinglePage";
 const Title = styled.img`
   margin: 10px;
   width: 25%;
+  min-width: 250px;
   height: auto;
 `;
 

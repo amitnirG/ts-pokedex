@@ -3,93 +3,95 @@ import { useEffect, useState,useRef,useCallback } from "react";
 import PokeCard from "./PokeCard";
 import styled from "styled-components";
 import { getRequest } from "../API";
-import { IpokeFullData } from "../interfaces";
+import { IpokeCard } from "../interfaces";
 
-const Deck = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  grid-auto-rows: auto;
-  grid-gap: 1.5rem;
-  padding: 5%;
-`;
-const StyledSearch = styled.input`
-font-size:3rem;
-  /* margin: 0px auto 0px auto; */
-  padding: 10px;
-`;
+
 
 export default function CardDeck() {
-  const [pokemons, setPokemons] = useState<IpokeFullData[]>([]);
-  const [filteredPokemons, setFilteredPokemons] = useState<IpokeFullData[]>([]);
+  const [pokemons, setPokemons] = useState<IpokeCard[]>([]);
+  const [filteredPokemons, setFilteredPokemons] = useState<IpokeCard[]>([]);
   const [search, setSearch] = useState<string>('');
   const [paginationOffset,setPaginationOffset] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const throttleClick = useCallback((fnc,delay) => {throttle(fnc, delay)} ,[]);
   
-
+  
+  //pagination handlers
+  const observer = useRef<any>(null);
+  const lastCardElement = useCallback((node:any)=>{
+    if(loading) return;
+    if(paginationOffset>=950) return;
+    if(observer.current) {
+      observer.current.disconnect();
+    }
+    observer.current = new IntersectionObserver((entries) => {
+      if(entries[0].isIntersecting){
+        console.log('u can see me');
+        loadMore();
+      }
+    })
+    if(node&&observer) {
+      observer.current.observe(node)
+    }
+  },[loading])
+  
+  useEffect(() => {
+    fetchPokeData();
+  }, [paginationOffset]);
+  
+  //responsible for the search
+  useEffect(() => {
+    filterPokemons();
+  }, [pokemons]);
+  
+  
   //fetch data frop pokeApi
   const fetchPokeData = async () => {
-    const pokemonObjArr:IpokeFullData[]=[] ;
+    const pokemonObjArr:IpokeCard[]=[] ;
     const data = await getRequest(`https://pokeapi.co/api/v2/pokemon?limit=50&offset=${paginationOffset}`);
     await Promise.all(data.results.map(async (pokemon: any) => {
       const pokemonData: any = await getRequest(pokemon.url);
-      const pokemonObj: IpokeFullData = {
+      const pokemonObj: IpokeCard = {
         id: pokemonData.id,
-        frontImage: pokemonData.sprites.front_default,
-        backImage: pokemonData.sprites.back_default,
+        image: pokemonData.sprites.front_default,
         name: pokemonData.name,
-        types: pokemonData.types,
-        stats: {
-          hp: pokemonData.stats[0].base_stat,
-          attack: pokemonData.stats[1].base_stat,
-          defense: pokemonData.stats[2].base_stat,
-          specialAttack: pokemonData.stats[3].base_stat,
-          specialDefense: pokemonData.stats[4].base_stat,
-          speed: pokemonData.stats[5].base_stat,
-        },
       };
       pokemonObjArr.push(pokemonObj)
     }));
-    // setPokemons(pokemonObjArr.sort((a, b) => a.id - b.id))   //araging the pokemons by id order     
-    setPokemons((prevState:IpokeFullData[]):IpokeFullData[] => {
+    setPokemons((prevState:IpokeCard[]):IpokeCard[] => {
       return [...prevState,...pokemonObjArr].sort((a, b) => a.id - b.id)
     })
-    // setPokemons((prevState:IpokeFullData[]):IpokeFullData[] => {
-      // @ts-ignore
-      // return [...prevState,pokemonObjArr];
-    // })   //araging the pokemons by id order
-  };
-
-  const searchOnApi = async () => {
-    if(search===''){
-      setFilteredPokemons(pokemons)
-      return;
-    }
-    const pokemonData = await getRequest(
-      `https://pokeapi.co/api/v2/pokemon/${search}`
-    );
-    if(typeof pokemonData == 'string'){
-      setFilteredPokemons([]);
-      return;
-    }
-    const pokemonObj: IpokeFullData = {
-      id: pokemonData.id,
-      frontImage: pokemonData.sprites.front_default,
-      backImage: pokemonData.sprites.back_default,
-      name: pokemonData.name,
-      types: pokemonData.types,
-      stats: {
-        hp: pokemonData.stats[0].base_stat,
-        attack: pokemonData.stats[1].base_stat,
-        defense: pokemonData.stats[2].base_stat,
-        specialAttack: pokemonData.stats[3].base_stat,
-        specialDefense: pokemonData.stats[4].base_stat,
-        speed: pokemonData.stats[5].base_stat,
-      },
     };
-    setFilteredPokemons([pokemonObj])
     
+    const searchOnApi = async () => {
+      if(search===''){
+        setFilteredPokemons(pokemons)
+        return;
+      }
+      const pokemonData = await getRequest(`https://pokeapi.co/api/v2/pokemon/${search}`);
+      if(typeof pokemonData == 'string'){
+        setFilteredPokemons([]);
+        return;
+      }
+      const pokemonObj: IpokeCard = {
+        id: pokemonData.id,
+        image: pokemonData.sprites.front_default,
+        name: pokemonData.name,
+      };
+      setFilteredPokemons([pokemonObj])
+    }
+    
+    let timeout:any ;
+    const throttle = (fnc:()=>void, limit:number) => {
+      if (!timeout) {
+        fnc();
+          timeout = setTimeout(function() {
+          timeout = undefined;
+        }, limit);
   }
+};
 
-const loadMore = () => {
+  const loadMore = () => {
   setPaginationOffset((prevValue:number):number => {
     return prevValue+50;
   })
@@ -97,7 +99,7 @@ const loadMore = () => {
   //sets a filtered arr of pokemons by search
   const filterPokemons = async () => {
         setFilteredPokemons(
-      pokemons.filter((pokemon:IpokeFullData):boolean => {
+      pokemons.filter((pokemon:IpokeCard):boolean => {
         if (pokemon.name.includes(search) || pokemon.id.toString() === search){
           return true;
         }
@@ -110,46 +112,61 @@ const loadMore = () => {
   const searchHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
-
-  useEffect(() => {
-    fetchPokeData();
-  }, [paginationOffset]);
-
-  //responsible for the search
-  useEffect(() => {
-    filterPokemons();
-  }, [ pokemons]);
-
-  console.log(filteredPokemons);
   
   return (
-    <>
+    <div className='app-container' style={{display:'flex',flexDirection:'column',maxWidth:'100vw'}}>
       <div className="search-continer" style={{ display: "flex", justifyContent:"center",alignItems:"center" }}>
         <StyledSearch
           type="text"
-          placeholder="search pokemons"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             searchHandler(e);
           }}
         />
-        <button onClick={searchOnApi} style={{fontSize:'3rem',marginLeft:'10px',padding:'10px'}}> search on api</button>
+        <StyledButton onClick={()=>{throttleClick(searchOnApi,500)}}> search </StyledButton>
    
       </div>
       <Deck className="card-deck-container">
-       {(filteredPokemons)?
-       filteredPokemons.map((pokemon, index) => (
-         <PokeCard
+       {
+       filteredPokemons?.map((pokemon, index) => (
+        <PokeCard
          id={pokemon.id}
-         image={pokemon.frontImage}
+         image={pokemon.image}
          name={pokemon.name}
          key={pokemon.name + index}
          />
-         ))
-         :
-         <div>no pokemons found</div>
+       ))
         }
       </Deck>
-      <button onClick={loadMore} style={{fontSize:"50px",margin:'20px 0 50px 45%'}}> load more</button>
-    </>
+      {filteredPokemons.length>49&&paginationOffset<950&&
+      <div ref={lastCardElement}>Loading...</div>
+      }
+      {/* <button  onClick={loadMore} style={{fontSize:"50px",margin:'20px 0 50px 45%'}}> load more</button> */}
+    </div>
   );
+  
 }
+const Deck = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-auto-rows: auto;
+  grid-gap: 2rem;
+  padding: 2% 10% 1% 10%;
+`;
+
+const StyledSearch = styled.input`
+width:20%;
+min-width: 200px;
+background-color: #f7f7f9;
+font-size:1.5rem;
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px blue solid;
+`;
+
+const StyledButton=styled.button`
+margin-left: 5px;
+font-size: 1.5rem;
+border-radius:15px;
+color:white;
+padding:10px;
+background-color:#2323a5`;
