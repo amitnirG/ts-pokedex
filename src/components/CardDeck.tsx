@@ -1,149 +1,134 @@
 import React from "react";
-import { useEffect, useState,useRef,useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import PokeCard from "./PokeCard";
 import styled from "styled-components";
 import { getRequest } from "../API";
 import { IpokeCard } from "../interfaces";
-
-
+import useSearch from "../useSearch";
 
 export default function CardDeck() {
   const [pokemons, setPokemons] = useState<IpokeCard[]>([]);
-  const [filteredPokemons, setFilteredPokemons] = useState<IpokeCard[]>([]);
-  const [search, setSearch] = useState<string>('');
-  const [paginationOffset,setPaginationOffset] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
-  const throttleClick = useCallback((fnc,delay) => {throttle(fnc, delay)} ,[]);
-  
-  
+  const [search, setSearch] = useState<string>("");
+  const [paginationOffset, setPaginationOffset] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+
   //pagination handlers
   const observer = useRef<any>(null);
-  const lastCardElement = useCallback((node:any)=>{
-    if(loading) return;
-    if(paginationOffset>=950) return;
-    if(observer.current) {
-      observer.current.disconnect();
-    }
-    observer.current = new IntersectionObserver((entries) => {
-      if(entries[0].isIntersecting){
-        console.log('u can see me');
-        loadMore();
+  const lastCardElement = useCallback(
+    (node: any) => {
+      if (loading) return;
+      if (paginationOffset >= 950) return;
+      if (observer.current) {
+        observer.current.disconnect();
       }
-    })
-    if(node&&observer) {
-      observer.current.observe(node)
-    }
-  },[loading])
-  
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      });
+      if (node && observer) {
+        observer.current.observe(node);
+      }
+    },
+    [loading]
+  );
+
+  //pagination useEffect
   useEffect(() => {
     fetchPokeData();
   }, [paginationOffset]);
-  
-  //responsible for the search
-  useEffect(() => {
-    filterPokemons();
-  }, [pokemons]);
-  
-  
+
   //fetch data frop pokeApi
   const fetchPokeData = async () => {
-    const pokemonObjArr:IpokeCard[]=[] ;
-    const data = await getRequest(`https://pokeapi.co/api/v2/pokemon?limit=50&offset=${paginationOffset}`);
-    await Promise.all(data.results.map(async (pokemon: any) => {
-      const pokemonData: any = await getRequest(pokemon.url);
-      const pokemonObj: IpokeCard = {
-        id: pokemonData.id,
-        image: pokemonData.sprites.front_default,
-        name: pokemonData.name,
-      };
-      pokemonObjArr.push(pokemonObj)
-    }));
-    setPokemons((prevState:IpokeCard[]):IpokeCard[] => {
-      return [...prevState,...pokemonObjArr].sort((a, b) => a.id - b.id)
-    })
-    };
-    
-    const searchOnApi = async () => {
-      if(search===''){
-        setFilteredPokemons(pokemons)
-        return;
-      }
-      const pokemonData = await getRequest(`https://pokeapi.co/api/v2/pokemon/${search}`);
-      if(typeof pokemonData == 'string'){
-        setFilteredPokemons([]);
-        return;
-      }
-      const pokemonObj: IpokeCard = {
-        id: pokemonData.id,
-        image: pokemonData.sprites.front_default,
-        name: pokemonData.name,
-      };
-      setFilteredPokemons([pokemonObj])
-    }
-    
-    let timeout:any ;
-    const throttle = (fnc:()=>void, limit:number) => {
-      if (!timeout) {
-        fnc();
-          timeout = setTimeout(function() {
-          timeout = undefined;
-        }, limit);
-  }
-};
-
-  const loadMore = () => {
-  setPaginationOffset((prevValue:number):number => {
-    return prevValue+50;
-  })
-}
-  //sets a filtered arr of pokemons by search
-  const filterPokemons = async () => {
-        setFilteredPokemons(
-      pokemons.filter((pokemon:IpokeCard):boolean => {
-        if (pokemon.name.includes(search) || pokemon.id.toString() === search){
-          return true;
-        }
-          return false;
+    const pokemonObjArr: IpokeCard[] = [];
+    const data = await getRequest(
+      `https://pokeapi.co/api/v2/pokemon?limit=50&offset=${paginationOffset}`
+    );
+    await Promise.all(
+      data.results.map(async (pokemon: any) => {
+        const pokemonData: any = await getRequest(pokemon.url);
+        const pokemonObj: IpokeCard = {
+          id: pokemonData.id,
+          image: pokemonData.sprites.front_default,
+          name: pokemonData.name,
+        };
+        pokemonObjArr.push(pokemonObj);
       })
     );
+    setPokemons((prevState: IpokeCard[]): IpokeCard[] => {
+      return [...prevState, ...pokemonObjArr].sort((a, b) => a.id - b.id);
+    });
+    setLoading(false);
+  };
+
+  const loadMore = () => {
+    setLoading(true);
+    setPaginationOffset((prevValue: number): number => {
+      return prevValue + 50;
+    });
   };
 
   //search handler
   const searchHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
-  
+
+  const { pokemonSearchResult, searchLoading } = useSearch(search);
+
   return (
-    <div className='app-container' style={{display:'flex',flexDirection:'column',maxWidth:'100vw'}}>
-      <div className="search-continer" style={{ display: "flex", justifyContent:"center",alignItems:"center" }}>
+    <div
+      className="app-container"
+      style={{ display: "flex", flexDirection: "column", maxWidth: "100vw" }}
+    >
+      <div
+        className="search-continer"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <StyledSearch
           type="text"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             searchHandler(e);
           }}
         />
-        <StyledButton onClick={()=>{throttleClick(searchOnApi,500)}}> search </StyledButton>
-   
+        <StyledButton> search </StyledButton>
       </div>
       <Deck className="card-deck-container">
-       {
-       filteredPokemons?.map((pokemon, index) => (
-        <PokeCard
-         id={pokemon.id}
-         image={pokemon.image}
-         name={pokemon.name}
-         key={pokemon.name + index}
-         />
-       ))
-        }
+        {pokemonSearchResult ? ( //there is a found pokemon from search
+          <PokeCard
+            id={pokemonSearchResult.id}
+            image={pokemonSearchResult.image}
+            name={pokemonSearchResult.name}
+          />
+        ) : !search ? (
+          pokemons?.map(
+            (
+              pokemon,
+              index //search value is empty
+            ) => (
+              <PokeCard
+                id={pokemon.id}
+                image={pokemon.image}
+                name={pokemon.name}
+                key={pokemon.name + index}
+              />
+            )
+          )
+        ) : searchLoading ? ( //user typed on search and waiting for response
+          <div>loading...</div>
+        ) : (
+          <div> no results found</div> //no results found from search
+        )}
       </Deck>
-      {filteredPokemons.length>49&&paginationOffset<950&&
-      <div ref={lastCardElement}>Loading...</div>
-      }
-      {/* <button  onClick={loadMore} style={{fontSize:"50px",margin:'20px 0 50px 45%'}}> load more</button> */}
+      {!pokemonSearchResult && //pagination checks:
+        pokemons.length > 49 && //results from first API call arrived //todo change to loading state
+        paginationOffset < 950 && //no more pokemon to fetch
+        !search && <div ref={lastCardElement}>Loading...</div>}
     </div>
   );
-  
 }
 const Deck = styled.div`
   display: grid;
@@ -154,19 +139,20 @@ const Deck = styled.div`
 `;
 
 const StyledSearch = styled.input`
-width:20%;
-min-width: 200px;
-background-color: #f7f7f9;
-font-size:1.5rem;
+  width: 20%;
+  min-width: 200px;
+  background-color: #f7f7f9;
+  font-size: 1.5rem;
   padding: 10px;
   border-radius: 15px;
   border: 1px blue solid;
 `;
 
-const StyledButton=styled.button`
-margin-left: 5px;
-font-size: 1.5rem;
-border-radius:15px;
-color:white;
-padding:10px;
-background-color:#2323a5`;
+const StyledButton = styled.button`
+  margin-left: 5px;
+  font-size: 1.5rem;
+  border-radius: 15px;
+  color: white;
+  padding: 10px;
+  background-color: #2323a5;
+`;
