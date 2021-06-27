@@ -11,6 +11,7 @@ export default function CardDeck() {
   const [search, setSearch] = useState<string>("");
   const [paginationOffset, setPaginationOffset] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const { pokemonSearchResult, searchLoading } = useSearch(search);
 
   //pagination handlers
   const observer = useRef<any>(null);
@@ -73,8 +74,6 @@ export default function CardDeck() {
     setSearch(e.target.value);
   };
 
-  const { pokemonSearchResult, searchLoading } = useSearch(search);
-
   return (
     <div
       className="app-container"
@@ -97,13 +96,15 @@ export default function CardDeck() {
         <StyledButton> search </StyledButton>
       </div>
       <Deck className="card-deck-container">
-        {pokemonSearchResult ? ( //there is a found pokemon from search
+        {searchLoading ? ( //is the app or search loading //todo change to single loading
+          <div>loading...</div>
+        ) : pokemonSearchResult ? ( //there is a found pokemon from search
           <PokeCard
             id={pokemonSearchResult.id}
             image={pokemonSearchResult.image}
             name={pokemonSearchResult.name}
           />
-        ) : !search ? (
+        ) : !search ? ( //if app isnt loading and there is no search value show all pokemons
           pokemons?.map(
             (
               pokemon,
@@ -117,18 +118,47 @@ export default function CardDeck() {
               />
             )
           )
-        ) : searchLoading ? ( //user typed on search and waiting for response
-          <div>loading...</div>
         ) : (
           <div> no results found</div> //no results found from search
         )}
       </Deck>
-      {!pokemonSearchResult && //pagination checks:
-        pokemons.length > 49 && //results from first API call arrived //todo change to loading state
-        paginationOffset < 950 && //no more pokemon to fetch
-        !search && <div ref={lastCardElement}>Loading...</div>}
+
+      {
+        //pagination checks:
+        !pokemonSearchResult && //page is not showing a single pokemon
+          paginationOffset < 950 && //there are more pokemons to featch
+          !searchLoading &&
+          !search && <div ref={lastCardElement}>Loading more pokemons...</div>
+      }
     </div>
   );
+
+  // {
+  // {pokemonSearchResult ? ( //there is a found pokemon from search
+  //   <PokeCard
+  //     id={pokemonSearchResult.id}
+  //     image={pokemonSearchResult.image}
+  //     name={pokemonSearchResult.name}
+  //   />
+  // ) : !search ? (
+  //   pokemons?.map(
+  //     (
+  //       pokemon,
+  //       index //search value is empty
+  //     ) => (
+  //       <PokeCard
+  //         id={pokemon.id}
+  //         image={pokemon.image}
+  //         name={pokemon.name}
+  //         key={pokemon.name + index}
+  //       />
+  //     )
+  //   )
+  // ) : searchLoading ? ( //user typed on search and waiting for response
+  //   <div>loading...</div>
+  // ) : (
+  //   <div> no results found</div> //no results found from search
+  //  }
 }
 const Deck = styled.div`
   display: grid;

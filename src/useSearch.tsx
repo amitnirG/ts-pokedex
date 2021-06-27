@@ -16,11 +16,13 @@ export default function useSearch(search: string): returnValues {
 
   useEffect(() => {
     setSearchLoading(true);
+    setPokemonSearchResult(undefined);
   }, [search]);
 
   useEffect(() => {
     if (debouncedSearch) {
       searchOnApi();
+      setSearchLoading(false);
     } else {
       setPokemonSearchResult(undefined);
       setSearchLoading(false);
@@ -35,7 +37,7 @@ export default function useSearch(search: string): returnValues {
     );
     if (typeof pokemonData == "string") {
       setPokemonSearchResult(undefined);
-      setSearchLoading(false);
+
       return;
     }
     const pokemonObj: IpokeCard = {
